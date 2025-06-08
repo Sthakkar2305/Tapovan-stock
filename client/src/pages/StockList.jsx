@@ -289,7 +289,7 @@ autoTable(doc, {
                     <td>
                       <div className="d-flex gap-2">
                         <Link
-                          to={`/edit/${item._id}`}
+                          to={`/edit/${item.id}`}
                           className="btn btn-sm btn-outline-primary"
                         >
                           <i className="bi bi-pencil"></i>

@@ -1,45 +1,38 @@
-import mongoose from 'mongoose'
+import { DataTypes } from 'sequelize'
+import sequelize from '../config/db.js'
 
-const stockSchema = new mongoose.Schema({
+const Stock = sequelize.define('Stock', {
   name: {
-    type: String,
-    required: true,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   category: {
-    type: String,
-    required: true,
-    enum: ['Desk', 'Chair', 'Table', 'Bench', 'Whiteboard', 'Computer', 'Projector', 'Cabinet', 'Bookshelf', 'Fan', 'Other']
+    type: DataTypes.ENUM(
+      'Desk', 'Chair', 'Table', 'Bench', 'Whiteboard',
+      'Computer', 'Projector', 'Cabinet', 'Bookshelf', 'Fan', 'Other'
+    ),
+    allowNull: false
   },
   quantity: {
-    type: Number,
-    required: true,
-    min: 0
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: { min: 0 }
   },
   location: {
-    type: String,
-    required: true,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   condition: {
-    type: String,
-    required: true,
-    enum: ['Good', 'Fair', 'Repair Needed'],
-    default: 'Good'
+    type: DataTypes.ENUM('Good', 'Fair', 'Repair Needed'),
+    allowNull: false,
+    defaultValue: 'Good'
   },
   dateOfEntry: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   }
 }, {
   timestamps: true
 })
 
-// Index for better query performance
-stockSchema.index({ name: 1, category: 1 })
-stockSchema.index({ dateOfEntry: -1 })
-stockSchema.index({ quantity: 1 })
-
-
-
-export default mongoose.model('Stock', stockSchema)
+export default Stock

@@ -1,7 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import mongoose from 'mongoose'
+import sequelize from './config/db.js'
+import Stock from './models/Stock.js'
 import stockRoutes from './routes/stock.js'
 
 dotenv.config()
@@ -13,41 +14,30 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json())
 
-// Database connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    console.log('MongoDB connected successfully')
-  } catch (error) {
-    console.error('MongoDB connection error:', error)
-    process.exit(1)
-  }
-}
-
-connectDB()
-
 // Routes
 app.use('/api/stock', stockRoutes)
-
-// Health check route
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running successfully' })
 })
 
-// Error handling middleware
+// Error Handling
 app.use((err, req, res, next) => {
   console.error(err.stack)
   res.status(500).json({ message: 'Something went wrong!' })
 })
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`)
-})
+// Connect DB and start server
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('PostgreSQL connected and tables synced')
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`)
+    })
+  })
+  .catch((err) => {
+    console.error('Unable to connect to PostgreSQL:', err)
+  })

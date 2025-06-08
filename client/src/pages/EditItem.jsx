@@ -6,6 +6,7 @@ import { getStockItem, updateStockItem } from '../services/api'
 function EditItem() {
   const navigate = useNavigate()
   const { id } = useParams()
+  
   const [formData, setFormData] = useState({
     name: '',
     category: '',
