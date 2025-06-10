@@ -1,49 +1,61 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, Form, Button, Row, Col, Alert } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import { createStockItem } from '../services/api'
+import axios from 'axios'
 
-function AddItem() {
+function AddTransaction() {
   const navigate = useNavigate()
+
+  const [items, setItems] = useState([])
   const [formData, setFormData] = useState({
-    name: '',
-    category: '',
+    stockId: '',
+    type: '',
     quantity: '',
-    location: '',
-    condition: 'Good'
+    remarks: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const categories = [
-    'furniture',
-    'Electronics',
-    'Sports',
-    'Supplies(paper , sheet etc..) ',
-    'Specialized Equipment(lab product)',
-    'Other'
-  ]
+  const actions = ['Damage', 'Lost', 'Sold', 'Transferred']
 
-  const conditions = ['Good', 'Fair', 'Repair Needed']
+  useEffect(() => {
+    axios.get('/api/stock')
+      .then(res => setItems(res.data))
+      .catch(() => setError('Failed to load stock items.'))
+  }, [])
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
+    setError('')
+    setSuccess('')
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
+
+    const { stockId, type, quantity } = formData
+    console.log('stockId:', stockId, 'type:', type, 'quantity:', quantity)
+
+    if (!stockId || ! type || !quantity || quantity <= 0) {
+      setError('Please fill all required fields correctly.')
+      setLoading(false)
+      return
+    }
 
     try {
-      await createStockItem(formData)
-      navigate('/stock')
-    } catch (error) {
-      setError('Failed to add item. Please try again.')
-      console.error('Error adding item:', error)
+      await axios.post('http://localhost:5000/api/transactions', formData)
+
+      setSuccess('Transaction recorded successfully!')
+      setFormData({ item_id: '', type: '', quantity: '', remarks: '' })
+    } catch (err) {
+      setError(err.response?.data?.error || 'Transaction failed.')
     } finally {
       setLoading(false)
     }
@@ -52,13 +64,10 @@ function AddItem() {
   return (
     <div className="py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h2 mb-0">Add New Item</h1>
-        <Button
-          variant="outline-secondary"
-          onClick={() => navigate('/stock')}
-        >
+        <h1 className="h2 mb-0">Add Transaction</h1>
+        <Button variant="outline-secondary" onClick={() => navigate('/transactions')}>
           <i className="bi bi-arrow-left me-2"></i>
-          Back to Stock List
+          Back to Transactions
         </Button>
       </div>
 
@@ -68,13 +77,18 @@ function AddItem() {
             <Card.Header className="bg-primary text-white">
               <h5 className="mb-0">
                 <i className="bi bi-plus-circle me-2"></i>
-                Item Information
+                Transaction Information
               </h5>
             </Card.Header>
             <Card.Body>
               {error && (
-                <Alert variant="danger\" dismissible onClose={() => setError('')}>
+                <Alert variant="danger" dismissible onClose={() => setError('')}>
                   {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert variant="success" dismissible onClose={() => setSuccess('')}>
+                  {success}
                 </Alert>
               )}
 
@@ -82,30 +96,36 @@ function AddItem() {
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label>Item Name *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Enter item name"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Category *</Form.Label>
+                      <Form.Label>Item *</Form.Label>
                       <Form.Select
-                        name="category"
-                        value={formData.category}
+                        name="stockId"
+                        value={formData.item_id}
                         onChange={handleChange}
                         required
                       >
-                        <option value="">Select Category</option>
-                        {categories.map(category => (
-                          <option key={category} value={category}>
-                            {category}
+                        <option value="">Select Item</option>
+                        {items.map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+
+                  <Col md={6} className="mb-3">
+                    <Form.Group>
+                      <Form.Label>Action *</Form.Label>
+                      <Form.Select
+                        name="type"
+                        value={formData.type}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select Action</option>
+                        {actions.map(action => (
+                          <option key={action} value={action}>
+                            {action.charAt(0).toUpperCase() + action.slice(1)}
                           </option>
                         ))}
                       </Form.Select>
@@ -123,42 +143,22 @@ function AddItem() {
                         value={formData.quantity}
                         onChange={handleChange}
                         placeholder="Enter quantity"
-                        min="0"
+                        min="1"
                         required
                       />
                     </Form.Group>
                   </Col>
+
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label>Location *</Form.Label>
+                      <Form.Label>Remarks</Form.Label>
                       <Form.Control
                         type="text"
-                        name="location"
-                        value={formData.location}
+                        name="remarks"
+                        value={formData.remarks}
                         onChange={handleChange}
-                        placeholder="e.g., Class 5A, Library, Office"
-                        required
+                        placeholder="Optional remarks"
                       />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Condition *</Form.Label>
-                      <Form.Select
-                        name="condition"
-                        value={formData.condition}
-                        onChange={handleChange}
-                        required
-                      >
-                        {conditions.map(condition => (
-                          <option key={condition} value={condition}>
-                            {condition}
-                          </option>
-                        ))}
-                      </Form.Select>
                     </Form.Group>
                   </Col>
                 </Row>
@@ -167,7 +167,7 @@ function AddItem() {
                   <Button
                     variant="outline-secondary"
                     type="button"
-                    onClick={() => navigate('/stock')}
+                    onClick={() => navigate('/transactions')}
                     disabled={loading}
                   >
                     Cancel
@@ -180,7 +180,7 @@ function AddItem() {
                   >
                     {loading ? (
                       <>
-                        <div className="spinner-border spinner-border-sm me-2\" role="status">
+                        <div className="spinner-border spinner-border-sm me-2" role="status">
                           <span className="visually-hidden">Loading...</span>
                         </div>
                         Adding...
@@ -188,7 +188,7 @@ function AddItem() {
                     ) : (
                       <>
                         <i className="bi bi-check-circle me-2"></i>
-                        Add Item
+                        Add Transaction
                       </>
                     )}
                   </Button>
@@ -202,4 +202,4 @@ function AddItem() {
   )
 }
 
-export default AddItem
+export default AddTransaction

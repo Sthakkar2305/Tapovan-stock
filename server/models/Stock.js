@@ -8,8 +8,12 @@ const Stock = sequelize.define('Stock', {
   },
   category: {
     type: DataTypes.ENUM(
-      'Desk', 'Chair', 'Table', 'Bench', 'Whiteboard',
-      'Computer', 'Projector', 'Cabinet', 'Bookshelf', 'Fan', 'Other'
+    'furniture',
+    'Electronics',
+    'Sports',
+    'Supplies(paper , sheet etc..) ',
+    'Specialized Equipment(lab product)',
+    'Other'
     ),
     allowNull: false
   },

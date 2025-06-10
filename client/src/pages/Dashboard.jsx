@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react'
-import { Row, Col, Card, Badge, ListGroup } from 'react-bootstrap'
+import { useState, useEffect, useRef } from 'react'
+import { Row, Col, Card, Badge, ListGroup, Button } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
+import { Pie, Bar } from 'react-chartjs-2'
+import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
+import { toast, ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import { getStockItems } from '../services/api'
+
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -12,6 +20,9 @@ function Dashboard() {
   })
   const [lowStockItems, setLowStockItems] = useState([])
   const [recentItems, setRecentItems] = useState([])
+  const [categoryData, setCategoryData] = useState({})
+  const [locationData, setLocationData] = useState({})
+  const pdfRef = useRef()
 
   useEffect(() => {
     fetchDashboardData()
@@ -25,7 +36,16 @@ function Dashboard() {
       const lowStock = items.filter(item => item.quantity <= 5)
       const categories = [...new Set(items.map(item => item.category))].length
       const locations = [...new Set(items.map(item => item.location))].length
-      const recent = items.sort((a, b) => new Date(b.dateOfEntry) - new Date(a.dateOfEntry)).slice(0, 5)
+      const recent = items
+        .sort((a, b) => new Date(b.dateOfEntry) - new Date(a.dateOfEntry))
+        .slice(0, 5)
+
+      const categoryCounts = {}
+      const locationCounts = {}
+      items.forEach(item => {
+        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1
+        locationCounts[item.location] = (locationCounts[item.location] || 0) + 1
+      })
 
       setStats({
         totalItems: items.length,
@@ -35,12 +55,31 @@ function Dashboard() {
       })
       setLowStockItems(lowStock)
       setRecentItems(recent)
+      setCategoryData({
+        labels: Object.keys(categoryCounts),
+        datasets: [{
+          data: Object.values(categoryCounts),
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#66bb6a', '#ffa726']
+        }]
+      })
+      setLocationData({
+        labels: Object.keys(locationCounts),
+        datasets: [{
+          label: 'Stock per Location',
+          data: Object.values(locationCounts),
+          backgroundColor: '#42a5f5'
+        }]
+      })
+
+      toast.success('Dashboard data loaded successfully!')
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      toast.error('Failed to load dashboard data.')
     }
   }
 
   const getConditionBadgeVariant = (condition) => {
+    if (!condition) return 'secondary'
     switch (condition.toLowerCase()) {
       case 'good': return 'success'
       case 'fair': return 'warning'
@@ -49,86 +88,105 @@ function Dashboard() {
     }
   }
 
+  const downloadPDF = () => {
+    const input = pdfRef.current
+    html2canvas(input).then(canvas => {
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgProps = pdf.getImageProperties(imgData)
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      pdf.save('dashboard.pdf')
+    })
+  }
+
   return (
-    <div className="py-4">
+    <div className="py-4" ref={pdfRef}>
+      <ToastContainer />
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="h2 mb-0">Dashboard</h1>
-        <Link to="/add" className="btn btn-primary btn-custom">
-          <i className="bi bi-plus-circle me-2"></i>
-          Add New Item
-        </Link>
+        <div>
+          <Link to="/add" className="btn btn-primary me-2">
+            <i className="bi bi-plus-circle me-1"></i> Add New Item
+          </Link>
+          <Button variant="outline-success" onClick={downloadPDF}>
+            <i className="bi bi-download me-1"></i> Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <Row className="mb-4">
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="stats-card h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="flex-grow-1">
-                <h5 className="mb-1">Total Items</h5>
-                <h2 className="mb-0">{stats.totalItems}</h2>
-              </div>
-              <i className="bi bi-boxes stats-icon"></i>
+        {[
+          { title: 'Total Items', value: stats.totalItems, icon: 'bi-boxes' },
+          { title: 'Low Stock', value: stats.lowStockItems, icon: 'bi-exclamation-triangle' },
+          { title: 'Categories', value: stats.categories, icon: 'bi-tags' },
+          { title: 'Locations', value: stats.locations, icon: 'bi-geo-alt' }
+        ].map(({ title, value, icon }, index) => (
+          <Col lg={3} md={6} className="mb-3" key={title}>
+            <Card className="h-100 bg-light border-0 shadow-sm">
+              <Card.Body className="d-flex align-items-center">
+                <div className="flex-grow-1">
+                  <h5>{title}</h5>
+                  <h2>{value}</h2>
+                </div>
+                <i className={`bi ${icon} fs-2 text-secondary`}></i>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* Charts */}
+      <Row className="mb-4">
+        <Col md={6} className="mb-4">
+          <Card>
+            <Card.Header><strong>Stock by Category</strong></Card.Header>
+            <Card.Body>
+              {categoryData.labels ? (
+                <Pie data={categoryData} />
+              ) : (
+                <p className="text-muted text-center">No data available</p>
+              )}
             </Card.Body>
           </Card>
         </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="h-100" style={{background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', border: 'none', borderRadius: '1rem'}}>
-            <Card.Body className="d-flex align-items-center">
-              <div className="flex-grow-1">
-                <h5 className="mb-1">Low Stock</h5>
-                <h2 className="mb-0">{stats.lowStockItems}</h2>
-              </div>
-              <i className="bi bi-exclamation-triangle stats-icon"></i>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="h-100" style={{background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', border: 'none', borderRadius: '1rem'}}>
-            <Card.Body className="d-flex align-items-center">
-              <div className="flex-grow-1">
-                <h5 className="mb-1">Categories</h5>
-                <h2 className="mb-0">{stats.categories}</h2>
-              </div>
-              <i className="bi bi-tags stats-icon"></i>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="h-100" style={{background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white', border: 'none', borderRadius: '1rem'}}>
-            <Card.Body className="d-flex align-items-center">
-              <div className="flex-grow-1">
-                <h5 className="mb-1">Locations</h5>
-                <h2 className="mb-0">{stats.locations}</h2>
-              </div>
-              <i className="bi bi-geo-alt stats-icon"></i>
+        <Col md={6} className="mb-4">
+          <Card>
+            <Card.Header><strong>Stock by Location</strong></Card.Header>
+            <Card.Body>
+              {locationData.labels ? (
+                <Bar data={locationData} options={{ indexAxis: 'y' }} />
+              ) : (
+                <p className="text-muted text-center">No data available</p>
+              )}
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
+      {/* Low Stock + Recent Items */}
       <Row>
         <Col lg={6} className="mb-4">
           <Card className="h-100">
             <Card.Header className="bg-danger text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-exclamation-triangle me-2"></i>
-                Low Stock Alert
-              </h5>
+              <i className="bi bi-exclamation-triangle me-2"></i>Low Stock Alert
             </Card.Header>
             <Card.Body>
               {lowStockItems.length === 0 ? (
                 <p className="text-muted text-center py-3">No low stock items</p>
               ) : (
                 <ListGroup variant="flush">
-                  {lowStockItems.map((item) => (
-                    <ListGroup.Item key={item._id} className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>{item.name}</strong>
-                        <br />
-                        <small className="text-muted">{item.location}</small>
+                  {lowStockItems.map(item => (
+                    <ListGroup.Item key={item._id}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong>{item.name}</strong><br />
+                          <small>{item.location}</small>
+                        </div>
+                        <Badge bg="danger">{item.quantity} left</Badge>
                       </div>
-                      <Badge bg="danger">{item.quantity} left</Badge>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -140,26 +198,24 @@ function Dashboard() {
         <Col lg={6} className="mb-4">
           <Card className="h-100">
             <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-clock-history me-2"></i>
-                Recent Additions
-              </h5>
+              <i className="bi bi-clock-history me-2"></i>Recent Additions
             </Card.Header>
             <Card.Body>
               {recentItems.length === 0 ? (
-                <p className="text-muted text-center py-3">No items found</p>
+                <p className="text-muted text-center py-3">No recent items</p>
               ) : (
                 <ListGroup variant="flush">
-                  {recentItems.map((item) => (
-                    <ListGroup.Item key={item._id} className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>{item.name}</strong>
-                        <br />
-                        <small className="text-muted">{item.category} • {item.location}</small>
+                  {recentItems.map(item => (
+                    <ListGroup.Item key={item._id}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong>{item.name}</strong><br />
+                          <small>{item.category} • {item.location}</small>
+                        </div>
+                        <Badge bg={getConditionBadgeVariant(item.condition)}>
+                          {item.condition || 'N/A'}
+                        </Badge>
                       </div>
-                      <Badge bg={getConditionBadgeVariant(item.condition)}>
-                        {item.condition}
-                      </Badge>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>

@@ -8,7 +8,7 @@ function Navigation() {
         <LinkContainer to="/">
           <Navbar.Brand>
             <i className="bi bi-boxes me-2"></i>
-            School Stock Management
+            Stock Management
           </Navbar.Brand>
         </LinkContainer>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -30,6 +30,18 @@ function Navigation() {
               <Nav.Link>
                 <i className="bi bi-plus-circle me-1"></i>
                 Add Item
+              </Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/add-transaction">
+              <Nav.Link>
+                <i className="bi bi-arrow-left-right me-1"></i>
+                Add Transaction
+              </Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/transactions">
+              <Nav.Link>
+                <i className="bi bi-clock-history me-1"></i>
+                Transaction List
               </Nav.Link>
             </LinkContainer>
           </Nav>

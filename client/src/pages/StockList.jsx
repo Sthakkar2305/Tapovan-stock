@@ -1,142 +1,215 @@
-import { useState, useEffect } from 'react'
-import { Table, Button, Card, Row, Col, Form, Badge, Alert } from 'react-bootstrap'
-import { Link } from 'react-router-dom'
-import { getStockItems, deleteStockItem } from '../services/api'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-
+import { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Card,
+  Row,
+  Col,
+  Form,
+  Badge,
+  Alert,
+} from "react-bootstrap";
+import { Link } from "react-router-dom";
+import { getStockItems, deleteStockItem } from "../services/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 function StockList() {
-  const [items, setItems] = useState([])
-  const [filteredItems, setFilteredItems] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [conditionFilter, setConditionFilter] = useState('')
-  const [sortBy, setSortBy] = useState('dateOfEntry')
-  const [sortOrder, setSortOrder] = useState('desc')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [conditionFilter, setConditionFilter] = useState("");
+  const [sortBy, setSortBy] = useState("dateOfEntry");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchItems()
-  }, [])
+    fetchItems();
+  }, []);
 
   useEffect(() => {
-    filterAndSortItems()
-  }, [items, searchTerm, categoryFilter, conditionFilter, sortBy, sortOrder])
+    filterAndSortItems();
+  }, [items, searchTerm, categoryFilter, conditionFilter, sortBy, sortOrder]);
 
   const fetchItems = async () => {
     try {
-      setLoading(true)
-      const response = await getStockItems()
-      setItems(response.data)
-      setError('')
+      setLoading(true);
+      const response = await getStockItems();
+      setItems(response.data);
+      setError("");
     } catch (error) {
-      setError('Failed to fetch items')
-      console.error('Error fetching items:', error)
+      setError("Failed to fetch items");
+      console.error("Error fetching items:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+    if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        await deleteStockItem(id)
-        fetchItems()
+        await deleteStockItem(id);
+        fetchItems();
       } catch (error) {
-        setError('Failed to delete item')
-        console.error('Error deleting item:', error)
+        setError("Failed to delete item");
+        console.error("Error deleting item:", error);
       }
     }
-  }
+  };
 
   const filterAndSortItems = () => {
-    let filtered = [...items]
+    let filtered = [...items];
 
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
     if (categoryFilter) {
-      filtered = filtered.filter(item => item.category === categoryFilter)
+      filtered = filtered.filter((item) => item.category === categoryFilter);
     }
 
     if (conditionFilter) {
-      filtered = filtered.filter(item => item.condition === conditionFilter)
+      filtered = filtered.filter((item) => item.condition === conditionFilter);
     }
 
     filtered.sort((a, b) => {
-      let aValue = a[sortBy]
-      let bValue = b[sortBy]
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
 
-      if (sortBy === 'dateOfEntry') {
-        aValue = new Date(aValue)
-        bValue = new Date(bValue)
-      } else if (sortBy === 'quantity') {
-        aValue = parseInt(aValue)
-        bValue = parseInt(bValue)
+      if (sortBy === "dateOfEntry") {
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
+      } else if (sortBy === "quantity") {
+        aValue = parseInt(aValue);
+        bValue = parseInt(bValue);
       }
 
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
       } else {
-        return aValue < bValue ? 1 : -1
+        return aValue < bValue ? 1 : -1;
       }
-    })
+    });
 
-    setFilteredItems(filtered)
-  }
+    setFilteredItems(filtered);
+  };
 
   const getConditionBadgeVariant = (condition) => {
     switch (condition.toLowerCase()) {
-      case 'good': return 'success'
-      case 'fair': return 'warning'
-      case 'repair needed': return 'danger'
-      default: return 'secondary'
+      case "good":
+        return "success";
+      case "fair":
+        return "warning";
+      case "repair needed":
+        return "danger";
+      default:
+        return "secondary";
     }
-  }
+  };
 
   const getQuantityBadgeVariant = (quantity) => {
-    if (quantity <= 5) return 'danger'
-    if (quantity <= 15) return 'warning'
-    return 'success'
-  }
+    if (quantity <= 5) return "danger";
+    if (quantity <= 15) return "warning";
+    return "success";
+  };
 
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF()
-    doc.text('Stock Inventory Report', 14, 10)
+const handleDownloadPDF = async () => {
+  const doc = new jsPDF()
 
-    const tableColumn = ["Name", "Category", "Quantity", "Location", "Condition", "Date Added"]
-    const tableRows = []
+  // 🖼️ Load logo image (must be in public folder)
+  const logoUrl = 'https://scontent.fstv8-2.fna.fbcdn.net/v/t39.30808-6/300372722_434542408717367_8416897174784964293_n.png?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=v_NGLK2BECMQ7kNvwGWq3vg&_nc_oc=AdkCBezuz_yD2fPvKE_-IKX53oZ2k23dWOtRPP9p9sRbKW0j6rYp9FAQWAkiQ8SSyHXdC_FRQ0N4G9MNQFbJYjvh&_nc_zt=23&_nc_ht=scontent.fstv8-2.fna&_nc_gid=8oDhnrLJNDj89MyGOCBWVg&oh=00_AfMzkUjFpqEg4BUPd4omoN0TUSa2xnbkohIeYLoJYyVbpQ&oe=684A0727'
+  const logoImg = await new Promise((resolve) => {
+    const img = new Image()
+    img.src = logoUrl
+    img.onload = () => resolve(img)
+  })
 
-    filteredItems.forEach(item => {
-      const rowData = [
-        item.name,
-        item.category,
-        item.quantity,
-        item.location,
-        item.condition,
-        new Date(item.dateOfEntry).toLocaleDateString()
-      ]
-      tableRows.push(rowData)
-    })
+  // Draw logo
+  doc.addImage(logoImg, 'PNG', 14, 10, 20, 20)
 
-autoTable(doc, {
-  head: [tableColumn],
-  body: tableRows,
-  startY: 20
-})
+  // 🏫 School Title
+  doc.setFontSize(18)
+  doc.text('Tapovan School - Stock List', 40, 22)
+
+  // Table columns
+  const tableColumn = [
+    { header: "Name", dataKey: "name" },
+    { header: "Category", dataKey: "category" },
+    { header: "Quantity", dataKey: "quantity" },
+    { header: "Location", dataKey: "location" },
+    { header: "Condition", dataKey: "condition" },
+    { header: "Date Added", dataKey: "dateOfEntry" },
+  ]
+
+  // Table data
+  const tableRows = filteredItems.map(item => ({
+    name: item.name,
+    category: item.category,
+    quantity: item.quantity,
+    location: item.location,
+    condition: item.condition,
+    dateOfEntry: new Date(item.dateOfEntry).toLocaleDateString()
+  }))
+
+  autoTable(doc, {
+    startY: 35,
+    head: [tableColumn.map(col => col.header)],
+    body: tableRows.map(row => [
+      row.name,
+      row.category,
+      {
+        content: row.quantity.toString(),
+        styles: {
+          textColor: '#fff',
+          fillColor: row.quantity <= 5 ? '#dc3545' : row.quantity <= 15 ? '#ffc107' : '#28a745'
+        }
+      },
+      row.location,
+      {
+        content: row.condition,
+        styles: {
+          textColor: '#fff',
+          fillColor: row.condition.toLowerCase() === 'good' ? '#28a745'
+            : row.condition.toLowerCase() === 'fair' ? '#ffc107'
+            : '#dc3545'
+        }
+      },
+      row.dateOfEntry
+    ]),
+    styles: {
+      halign: 'center',
+      valign: 'middle',
+      fontSize: 10,
+    },
+    headStyles: {
+      fillColor: [52, 58, 64],
+      textColor: '#fff',
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    },
+    margin: { top: 35 },
+    didDrawPage: (data) => {
+      const pageCount = doc.internal.getNumberOfPages()
+      doc.setFontSize(9)
+      doc.text(`Page ${pageCount}`, doc.internal.pageSize.getWidth() - 20, doc.internal.pageSize.getHeight() - 10)
+    }
+  })
+
+  doc.save('Tapovan-Stock-List.pdf')
+}
 
 
-    doc.save('stock-inventory.pdf')
-  }
 
-  const categories = [...new Set(items.map(item => item.category))]
-  const conditions = [...new Set(items.map(item => item.condition))]
+  const categories = [...new Set(items.map((item) => item.category))];
+  const conditions = [...new Set(items.map((item) => item.condition))];
 
   if (loading) {
     return (
@@ -147,7 +220,7 @@ autoTable(doc, {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -167,7 +240,7 @@ autoTable(doc, {
       </div>
 
       {error && (
-        <Alert variant="danger" dismissible onClose={() => setError('')}>
+        <Alert variant="danger" dismissible onClose={() => setError("")}>
           {error}
         </Alert>
       )}
@@ -193,8 +266,10 @@ autoTable(doc, {
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </Form.Select>
             </Form.Group>
@@ -207,8 +282,10 @@ autoTable(doc, {
                 onChange={(e) => setConditionFilter(e.target.value)}
               >
                 <option value="">All Conditions</option>
-                {conditions.map(condition => (
-                  <option key={condition} value={condition}>{condition}</option>
+                {conditions.map((condition) => (
+                  <option key={condition} value={condition}>
+                    {condition}
+                  </option>
                 ))}
               </Form.Select>
             </Form.Group>
@@ -249,7 +326,11 @@ autoTable(doc, {
       </div>
 
       <Card>
-        <div className="table-responsive">
+        {window.innerWidth < 768 && (
+          <p className="text-muted mb-2">Swipe sideways to see more ➡️</p>
+        )}
+        <div className="custom-scroll-table">
+          {/* <div className="table-responsive"> */}
           <Table striped hover className="mb-0">
             <thead>
               <tr>
@@ -272,7 +353,9 @@ autoTable(doc, {
               ) : (
                 filteredItems.map((item) => (
                   <tr key={item._id}>
-                    <td><strong>{item.name}</strong></td>
+                    <td>
+                      <strong>{item.name}</strong>
+                    </td>
                     <td>{item.category}</td>
                     <td>
                       <Badge bg={getQuantityBadgeVariant(item.quantity)}>
@@ -297,7 +380,7 @@ autoTable(doc, {
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => handleDelete(item._id)}
+                          onClick={() => handleDelete(item.id)}
                         >
                           <i className="bi bi-trash"></i>
                         </Button>
@@ -308,10 +391,11 @@ autoTable(doc, {
               )}
             </tbody>
           </Table>
+          {/* </div> */}
         </div>
       </Card>
     </div>
-  )
+  );
 }
 
-export default StockList
+export default StockList;

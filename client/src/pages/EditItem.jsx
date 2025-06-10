@@ -19,16 +19,11 @@ function EditItem() {
   const [error, setError] = useState('')
 
   const categories = [
-    'Desk',
-    'Chair',
-    'Table',
-    'Bench',
-    'Whiteboard',
-    'Computer',
-    'Projector',
-    'Cabinet',
-    'Bookshelf',
-    'Fan',
+    'furniture',
+    'Electronics',
+    'Sports',
+    'Supplies(paper , sheet etc..) ',
+    'Specialized Equipment(lab product)',
     'Other'
   ]
 
