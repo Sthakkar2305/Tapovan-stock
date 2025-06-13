@@ -20,7 +20,7 @@ function AddTransaction() {
   const actions = ['Damage', 'Lost', 'Sold', 'Transferred']
 
   useEffect(() => {
-    axios.get('/api/stock')
+    axios.get(`${process.env.VITE_API_URL}/api/stock`)
       .then(res => setItems(res.data))
       .catch(() => setError('Failed to load stock items.'))
   }, [])
@@ -50,7 +50,7 @@ function AddTransaction() {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/transactions', formData)
+      await axios.post(`${process.env.VITE_API_URL}/api/transactions`, formData)
 
       setSuccess('Transaction recorded successfully!')
       setFormData({ item_id: '', type: '', quantity: '', remarks: '' })
