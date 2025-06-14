@@ -34,7 +34,7 @@ function TransactionList() {
   const fetchTransactions = async () => {
     try {
       setLoading(true)
-      const res = await axios.get("/api/transactions")
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/transactions`)
       setTransactions(res.data)
       setError("")
     } catch (err) {
