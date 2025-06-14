@@ -51,7 +51,7 @@ function AddTransaction() {
     }
 
     try {
-   await axios.post(`${import.meta.env.VITE_API_URL}/stock`, formData)
+   await axios.post(`${import.meta.env.VITE_API_URL}/transactions`, formData)
 
       setSuccess('Transaction recorded successfully!')
       setFormData({ stockId: '', type: '', quantity: '', remarks: '' })
