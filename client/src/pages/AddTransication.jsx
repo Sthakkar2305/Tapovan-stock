@@ -53,7 +53,7 @@ function AddTransaction() {
       await axios.post(`${process.env.VITE_API_URL}/api/transactions`, formData)
 
       setSuccess('Transaction recorded successfully!')
-      setFormData({ item_id: '', type: '', quantity: '', remarks: '' })
+      setFormData({ stockId: '', type: '', quantity: '', remarks: '' })
     } catch (err) {
       setError(err.response?.data?.error || 'Transaction failed.')
     } finally {
@@ -99,7 +99,7 @@ function AddTransaction() {
                       <Form.Label>Item *</Form.Label>
                       <Form.Select
                         name="stockId"
-                        value={formData.item_id}
+                        value={formData.stockId}
                         onChange={handleChange}
                         required
                       >
