@@ -137,7 +137,7 @@ function Dashboard() {
 
       {/* Charts */}
       {/* transiction */}
-      <Col lg={12} className="mb-4">
+{/*       <Col lg={12} className="mb-4">
   <Card className="h-100">
     <Card.Header className="bg-info text-white">
       <i className="bi bi-cash-stack me-2"></i>Latest Transactions
@@ -193,7 +193,7 @@ function Dashboard() {
     </Card.Body>
   </Card>
 </Col>
-
+ */}
 
       {/* Low Stock + Recent Items */}
       <Row>
