@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Row, Col, Card, Badge, ListGroup, Button } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
-import { Pie, Bar } from 'react-chartjs-2'
-import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { toast, ToastContainer } from 'react-toastify'
@@ -139,32 +137,64 @@ function Dashboard() {
       </Row>
 
       {/* Charts */}
-      <Row className="mb-4">
-        <Col md={6} className="mb-4">
-          <Card>
-            <Card.Header><strong>Stock by Category</strong></Card.Header>
-            <Card.Body>
-              {categoryData.labels ? (
-                <Pie data={categoryData} />
-              ) : (
-                <p className="text-muted text-center">No data available</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6} className="mb-4">
-          <Card>
-            <Card.Header><strong>Stock by Location</strong></Card.Header>
-            <Card.Body>
-              {locationData.labels ? (
-                <Bar data={locationData} options={{ indexAxis: 'y' }} />
-              ) : (
-                <p className="text-muted text-center">No data available</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* transiction */}
+      <Col lg={12} className="mb-4">
+  <Card className="h-100">
+    <Card.Header className="bg-info text-white">
+      <i className="bi bi-cash-stack me-2"></i>Latest Transactions
+    </Card.Header>
+    <Card.Body>
+      {recentItems.length === 0 ? (
+        <p className="text-muted text-center py-3">No recent transactions</p>
+      ) : (
+        <ListGroup variant="flush">
+          {recentItems.map(item => (
+            <ListGroup.Item key={item._id}>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{item.name}</strong><br />
+                  <small>{new Date(item.dateOfEntry).toLocaleString()} • {item.category} • {item.location}</small>
+                </div>
+                <Badge bg={getConditionBadgeVariant(item.condition)}>
+                  {item.condition || 'N/A'}
+                </Badge>
+              </div>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      )}
+    </Card.Body>
+  </Card>
+</Col>
+<Col lg={12} className="mb-4">
+  <Card className="h-100">
+    <Card.Header className="bg-info text-white">
+      <i className="bi bi-cash-stack me-2"></i>Latest Transactions
+    </Card.Header>
+    <Card.Body>
+      {recentItems.length === 0 ? (
+        <p className="text-muted text-center py-3">No recent transactions</p>
+      ) : (
+        <ListGroup variant="flush">
+          {recentItems.map(item => (
+            <ListGroup.Item key={item._id}>
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{item.name}</strong><br />
+                  <small>{new Date(item.dateOfEntry).toLocaleString()} • {item.category} • {item.location}</small>
+                </div>
+                <Badge bg={getConditionBadgeVariant(item.condition)}>
+                  {item.condition || 'N/A'}
+                </Badge>
+              </div>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      )}
+    </Card.Body>
+  </Card>
+</Col>
+
 
       {/* Low Stock + Recent Items */}
       <Row>
