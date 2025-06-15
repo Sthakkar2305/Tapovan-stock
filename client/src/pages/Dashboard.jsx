@@ -7,7 +7,6 @@ import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { getStockItems } from '../services/api'
 
-ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 function Dashboard() {
   const [stats, setStats] = useState({
